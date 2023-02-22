@@ -87,17 +87,18 @@ func (m *MessageStream) outbound() {
 		case <-m.Shutdown:
 			log.Infof("Closing OpenFlow message stream.")
 			m.conn.Close()
+			// clear Outbound chan
+			go func() {
+				for {
+					select {
+					case <-m.Outbound:
+					case <-time.After(time.Minute * 2):
+						return
+					}
+				}
+			}()
 			for i := 0; i < numParserGoroutines; i++ {
 				m.parserShutdown <- true
-			}
-
-			// clear Outbound chan
-			for {
-				select {
-				case <-m.Outbound:
-				case <-time.After(time.Minute * 2):
-					return
-				}
 			}
 		case msg := <-m.Outbound:
 			// Forward outbound messages to conn
