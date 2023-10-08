@@ -220,17 +220,40 @@ func NewMulitiRegMatch(fields ...*MatchField) []*MatchField {
 	for _, reg := range fields {
 		if v, ok := regMap[reg.Field]; ok {
 			v.HasMask = v.HasMask || reg.HasMask
-			v.Mask = &Uint32Message{
-				Data: v.Mask.(*Uint32Message).Data | reg.Mask.(*Uint32Message).Data,
-			}
+			newMask := v.Mask.(*Uint32Message).Data | reg.Mask.(*Uint32Message).Data
 			v.Value = &Uint32Message{
-				Data: v.Value.(*Uint32Message).Data | reg.Value.(*Uint32Message).Data,
+				Data: shiftDataByMask(v.Value.(*Uint32Message).Data, v.Mask.(*Uint32Message).Data, newMask) |
+					shiftDataByMask(reg.Value.(*Uint32Message).Data, reg.Mask.(*Uint32Message).Data, newMask),
+			}
+			v.Mask = &Uint32Message{
+				Data: newMask,
 			}
 		} else {
 			regMap[reg.Field] = reg
 		}
 	}
 	return maps.Values(regMap)
+}
+
+func shiftDataByMask(data, oldMask, newMask uint32) uint32 {
+	oldOffset := cntUint32SuffixZero(oldMask)
+	newOffset := cntUint32SuffixZero(newMask)
+	if newOffset < oldOffset {
+		return data << (oldOffset - newOffset)
+	}
+	return data
+}
+
+func cntUint32SuffixZero(data uint32) int {
+	if data == 0 {
+		return 32
+	}
+	offset := 0
+	for data%2 == 0 {
+		data >>= 1
+		offset++
+	}
+	return offset
 }
 
 func newNXTunMetadataHeader(idx int, hasMask bool) *MatchField {
