@@ -89,13 +89,15 @@ func (m *MessageStream) outbound() {
 			m.conn.Close()
 			// clear Outbound chan
 			go func() {
+			clearLoop:
 				for {
 					select {
 					case <-m.Outbound:
-					case <-time.After(time.Minute * 2):
-						return
+					case <-time.After(time.Minute * 10):
+						break clearLoop
 					}
 				}
+				close(m.Outbound)
 			}()
 			for i := 0; i < numParserGoroutines; i++ {
 				m.parserShutdown <- true
