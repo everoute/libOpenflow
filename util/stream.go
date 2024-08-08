@@ -67,6 +67,7 @@ func NewMessageStream(conn net.Conn, parser Parser) *MessageStream {
 		make(chan bool, 1),    // Shutdown
 	}
 
+	go m.shutdown()
 	go m.outbound()
 	go m.inbound()
 	for i := 0; i < numParserGoroutines; i++ {
@@ -80,40 +81,41 @@ func (m *MessageStream) GetAddr() net.Addr {
 	return m.conn.RemoteAddr()
 }
 
-// Listen for a Shutdown signal or Outbound messages.
-func (m *MessageStream) outbound() {
-	for {
-		select {
-		case <-m.Shutdown:
-			log.Infof("Closing OpenFlow message stream.")
-			m.conn.Close()
-			// clear Outbound chan
-			go func() {
-			clearLoop:
-				for {
-					select {
-					case <-m.Outbound:
-					case <-time.After(time.Minute * 10):
-						break clearLoop
-					}
-				}
-				close(m.Outbound)
-			}()
-			for i := 0; i < numParserGoroutines; i++ {
-				m.parserShutdown <- true
+// Listen for a Shutdown signal.
+func (m *MessageStream) shutdown() {
+	<-m.Shutdown
+	log.Infof("Closing OpenFlow message stream.")
+	m.conn.Close()
+	// clear Outbound chan
+	go func() {
+		t := time.NewTicker(time.Minute * 10)
+	clearLoop:
+		for {
+			select {
+			case <-m.Outbound:
+			case <-t.C:
+				break clearLoop
 			}
-			return
-		case msg := <-m.Outbound:
-			// Forward outbound messages to conn
-			data, _ := msg.MarshalBinary()
-			if _, err := m.conn.Write(data); err != nil {
-				log.Warnln("OutboundError:", err)
-				m.Error <- err
-				m.Shutdown <- true
-			}
-
-			log.Debugf("Sent(%d): %v", len(data), data)
 		}
+		close(m.Outbound)
+	}()
+	for i := 0; i < numParserGoroutines; i++ {
+		m.parserShutdown <- true
+	}
+}
+
+// Listen for Outbound messages.
+func (m *MessageStream) outbound() {
+	for msg := range m.Outbound {
+		// Forward outbound messages to conn
+		data, _ := msg.MarshalBinary()
+		if _, err := m.conn.Write(data); err != nil {
+			log.Warnln("OutboundError:", err)
+			m.Error <- err
+			m.Shutdown <- true
+		}
+
+		log.Debugf("Sent(%d): %v", len(data), data)
 	}
 }
 
