@@ -2,6 +2,7 @@ package openflow13
 
 import (
 	"encoding/binary"
+	"fmt"
 
 	log "github.com/sirupsen/logrus"
 
@@ -45,6 +46,9 @@ func (s *MultipartRequest) MarshalBinary() (data []byte, err error) {
 
 func (s *MultipartRequest) UnmarshalBinary(data []byte) error {
 	err := s.Header.UnmarshalBinary(data)
+	if err != nil {
+		return err
+	}
 	n := s.Header.Len()
 
 	s.Type = binary.BigEndian.Uint16(data[n:])
@@ -57,22 +61,21 @@ func (s *MultipartRequest) UnmarshalBinary(data []byte) error {
 	switch s.Type {
 	case MultipartType_Aggregate:
 		req = s.Body.(*AggregateStatsRequest)
-		err = req.UnmarshalBinary(data[n:])
 	case MultipartType_Desc:
 		break
 	case MultipartType_Flow:
 		req = s.Body.(*FlowStatsRequest)
-		err = req.UnmarshalBinary(data[n:])
 	case MultipartType_Port:
 		req = s.Body.(*PortStatsRequest)
-		err = req.UnmarshalBinary(data[n:])
 	case MultipartType_Table:
 		break
 	case MultipartType_Queue:
 		req = s.Body.(*QueueStatsRequest)
-		err = req.UnmarshalBinary(data[n:])
 	case MultipartType_Experimenter:
 		break
+	}
+	if req == nil {
+		return fmt.Errorf("unsupported MultipartRequest type: %d", s.Type)
 	}
 	return err
 }
