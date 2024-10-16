@@ -10,7 +10,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const numParserGoroutines = 25
+const (
+	numParserGoroutines = 25
+	messageTimeout      = 10 * time.Second
+)
 
 type BufferPool struct {
 	Empty chan *bytes.Buffer
@@ -106,17 +109,24 @@ func (m *MessageStream) shutdown() {
 
 // Listen for Outbound messages.
 func (m *MessageStream) outbound() {
+	var err error
 	for msg := range m.Outbound {
 		// Forward outbound messages to conn
 		data, _ := msg.MarshalBinary()
+		if err = m.conn.SetWriteDeadline(time.Now().Add(messageTimeout)); err != nil {
+			goto ret
+		}
 		if _, err := m.conn.Write(data); err != nil {
-			log.Warnln("OutboundError:", err)
-			m.Error <- err
-			m.Shutdown <- true
+			goto ret
 		}
 
 		log.Debugf("Sent(%d): %v", len(data), data)
 	}
+	return
+ret:
+	log.Warnln("OutboundError:", err)
+	m.Error <- err
+	m.Shutdown <- true
 }
 
 // Handle inbound messages
