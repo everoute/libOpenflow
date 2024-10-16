@@ -659,12 +659,13 @@ func (m *EthDstField) Len() uint16 {
 	return 6
 }
 func (m *EthDstField) MarshalBinary() (data []byte, err error) {
-	data = make([]byte, 6)
+	data = make([]byte, m.Len())
 	copy(data, m.EthDst)
 	return
 }
 
 func (m *EthDstField) UnmarshalBinary(data []byte) error {
+	m.EthDst = make([]byte, m.Len())
 	copy(m.EthDst, data)
 	return nil
 }
@@ -702,12 +703,13 @@ func (m *EthSrcField) Len() uint16 {
 	return 6
 }
 func (m *EthSrcField) MarshalBinary() (data []byte, err error) {
-	data = make([]byte, 6)
+	data = make([]byte, m.Len())
 	copy(data, m.EthSrc)
 	return
 }
 
 func (m *EthSrcField) UnmarshalBinary(data []byte) error {
+	m.EthSrc = make([]byte, m.Len())
 	copy(m.EthSrc, data)
 	return nil
 }
