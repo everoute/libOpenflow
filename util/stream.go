@@ -124,9 +124,12 @@ func (m *MessageStream) outbound() {
 	}
 	return
 ret:
-	log.Warnln("OutboundError:", err)
-	m.Error <- err
-	m.Shutdown <- true
+	// Flow actions from Apps do not handle errors,
+	// Re-connect will lose current msg from chan.
+	// So, just Fatal here until we check flow status
+	log.Fatalf("OutboundError: %s", err)
+	// m.Error <- err
+	// m.Shutdown <- true
 }
 
 // Handle inbound messages
