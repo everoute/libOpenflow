@@ -1,10 +1,13 @@
 module github.com/contiv/libOpenflow
 
-go 1.19
+go 1.22.0
+
+toolchain go1.22.5
 
 require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.2
+	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
 )
 
 require (
