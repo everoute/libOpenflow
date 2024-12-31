@@ -94,6 +94,58 @@ func TestNXActionResubmit(t *testing.T) {
 	}
 }
 
+func m[T any](val T, err any) T {
+	if err != nil {
+		panic(err)
+	}
+	return val
+}
+
+func TestNewMatchField(t *testing.T) {
+	var origin, now *MatchField
+	equal := func() bool {
+		s1 := m(origin.MarshalBinary())
+		s2 := m(now.MarshalBinary())
+		for i := range s1 {
+			if s1[i] != s2[i] {
+				return false
+			}
+		}
+		return true
+	}
+	var data uint32 = 0x12345678
+	origin = NewRegMatchField(0, data, NewNXRangeByOfsNBits(0, 32))
+	now, _ = NewMatchField("NXM_NX_REG0", data, 0, 32)
+	if !equal() {
+		t.Errorf("Failed to create match NXM_NX_REG0")
+	}
+
+	ipv6 := net.ParseIP("ff04::12:34")
+	origin = NewIpv6SrcField(ipv6, nil)
+	now, _ = NewMatchField[net.IP, int]("OXM_OF_IPV6_SRC", ipv6)
+	if !equal() {
+		t.Errorf("Failed to create match OXM_OF_IPV6_SRC")
+	}
+
+	mac, _ := net.ParseMAC("11:22:33:00:00:00")
+	mask, _ := net.ParseMAC("ff:ff:ff:00:00:00")
+	origin = NewEthSrcField(mac, &mask)
+	// 会位移start
+	nwoMac, _ := net.ParseMAC("00:00:00:11:22:33")
+	now, _ = NewMatchField("OXM_OF_ETH_SRC", nwoMac, 24, 24)
+	if !equal() {
+		t.Errorf("Failed to create match OXM_OF_IPV6_SRC")
+	}
+	// 指定不位移
+	now, _ = NewMatchField("OXM_OF_ETH_SRC", mac, 24, 24, 0)
+	if !equal() {
+		t.Errorf("Failed to create match OXM_OF_IPV6_SRC")
+	}
+
+	origin = NewMetadataField(1, nil)
+	now, _ = NewMatchField[int8, int]("OXM_FIELD_METADATA", int8(1))
+}
+
 func TestNOfs(t *testing.T) {
 	var start, ofs, end, nBits uint16
 	start = uint16(16)

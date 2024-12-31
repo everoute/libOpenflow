@@ -2,7 +2,11 @@ package openflow13
 
 import (
 	"fmt"
+	"math/big"
+	"reflect"
 	"strings"
+
+	"golang.org/x/exp/constraints"
 )
 
 const (
@@ -302,4 +306,37 @@ func (n *NXRange) GetOfs() uint16 {
 // GetNbits returns the bits count from NXRange.
 func (n *NXRange) GetNbits() uint16 {
 	return uint16(n.end - n.start + 1)
+}
+
+func big2byte(i *big.Int, length uint8) *ByteArrayField {
+	bytes := i.Bytes()
+	result := make([]byte, length)
+	copy(result[int(length)-len(bytes):], bytes)
+	return &ByteArrayField{
+		Length: uint8(len(result)),
+		Data:   result,
+	}
+}
+
+func rangeMask(start, length uint) *big.Int {
+	mask := new(big.Int).Lsh(big.NewInt(1), length)
+	mask.Sub(mask, big.NewInt(1)) // 生成长度为 length 的全 1 掩码
+	mask.Lsh(mask, start)         // 将掩码左移到 start 位
+	return mask
+}
+
+func conv[Int constraints.Integer | *big.Int | ~[]byte](i Int) *big.Int {
+	result := &big.Int{}
+	vi := reflect.ValueOf(i)
+	switch vi.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		result.SetInt64(vi.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		result.SetUint64(vi.Uint())
+	case reflect.Slice:
+		result.SetBytes(vi.Bytes())
+	case reflect.Ptr:
+		result = vi.Interface().(*big.Int)
+	}
+	return result
 }

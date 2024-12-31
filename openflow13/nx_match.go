@@ -4,8 +4,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math/big"
 	"net"
 
+	"golang.org/x/exp/constraints"
 	"golang.org/x/exp/maps"
 )
 
@@ -212,6 +214,40 @@ func NewRegMatchField(idx int, data uint32, dataRng *NXRange) *MatchField {
 		field.Mask = newUint32Message(dataRng.ToUint32Mask())
 	}
 	return field
+}
+
+// NewMatchField mask没有值,不做mask;mask为1,start=mask[0],off=len(data);mask为2,start=mask[0],off=mask[1];mask 3指定位移
+// [注意]data的匹配和原始的行为不一样,原始不会对data做任何处理,这里会给data做位移到mask的start,这里还对最终值做的后填充,保证和命令行为一致
+func NewMatchField[Int constraints.Integer | *big.Int | ~[]byte, Mask constraints.Integer](
+	regName string, data Int, mask ...Mask) (*MatchField, error) {
+	if len(mask) > 3 {
+		return nil, fmt.Errorf("invalid mask length: %d", len(mask))
+	}
+	field, err := FindFieldHeaderByName(regName, len(mask) > 0)
+	if err != nil {
+		return nil, err
+	}
+	value := conv(data)
+	length := field.Length
+	if len(mask) > 0 {
+		var maskInt *big.Int
+		length /= 2
+		if len(mask) != 3 || mask[2] == 1 {
+			value = value.Lsh(value, uint(mask[0]))
+		}
+		if len(mask) == 1 {
+			maskInt = rangeMask(uint(mask[0]), uint(value.BitLen()))
+		} else {
+			maskInt = rangeMask(uint(mask[0]), uint(mask[1]))
+		}
+		maskValue := new(big.Int).And(value, maskInt)
+		if value.Cmp(maskValue) != 0 {
+			return nil, fmt.Errorf("invalid mask and data")
+		}
+		field.Mask = big2byte(maskInt, length)
+	}
+	field.Value = big2byte(value, length)
+	return field, nil
 }
 
 // NewMulitiNXRegMatch merge registers with same id
