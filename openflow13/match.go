@@ -285,6 +285,7 @@ func DecodeMatchField(class uint16, field uint8, length uint8, hasMask bool, dat
 		case OXM_FIELD_IPV6_DST:
 			val = new(Ipv6DstField)
 		case OXM_FIELD_IPV6_FLABEL:
+			val = new(IPv6FlowLabelField)
 		case OXM_FIELD_ICMPV6_TYPE:
 			val = new(IcmpTypeField)
 		case OXM_FIELD_ICMPV6_CODE:
@@ -376,6 +377,7 @@ func DecodeMatchField(class uint16, field uint8, length uint8, hasMask bool, dat
 			val = new(EthSrcField)
 		case NXM_NX_IP_FRAG:
 		case NXM_NX_IPV6_LABEL:
+			val = new(IPv6FlowLabelField)
 		case NXM_NX_IP_ECN:
 		case NXM_NX_IP_TTL:
 		case NXM_NX_MPLS_TTL:
@@ -1055,6 +1057,49 @@ func NewIpv6DstField(ipDst net.IP, ipDstMask *net.IP) *MatchField {
 		f.Length += uint8(mask.Len())
 	}
 
+	return f
+}
+
+type IPv6FlowLabelField struct {
+	FlowLabel uint32
+}
+
+func (m *IPv6FlowLabelField) Len() uint16 {
+	return 3
+}
+
+func (m *IPv6FlowLabelField) MarshalBinary() (data []byte, err error) {
+	data = make([]byte, 4)
+
+	binary.BigEndian.PutUint32(data, m.FlowLabel)
+	return
+}
+
+func (m *IPv6FlowLabelField) UnmarshalBinary(data []byte) error {
+	m.FlowLabel = binary.BigEndian.Uint32(data)
+	return nil
+}
+
+// Return a MatchField for ipv6 flow label
+func NewIPV6FlowLabelField(flowLabel uint32, flowLabelMask *uint32) *MatchField {
+	f := new(MatchField)
+	f.Class = OXM_CLASS_OPENFLOW_BASIC
+	f.Field = OXM_FIELD_IPV6_FLABEL
+	f.HasMask = false
+
+	ipv6FlowLabelField := new(IPv6FlowLabelField)
+	ipv6FlowLabelField.FlowLabel = flowLabel
+	f.Value = ipv6FlowLabelField
+	f.Length = uint8(ipv6FlowLabelField.Len())
+
+	// Add the mask
+	if flowLabelMask != nil {
+		mask := new(IPv6FlowLabelField)
+		mask.FlowLabel = *flowLabelMask
+		f.Mask = mask
+		f.HasMask = true
+		f.Length += uint8(mask.Len())
+	}
 	return f
 }
 
