@@ -11,6 +11,32 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+type Uint8Message struct {
+	Data uint8
+}
+
+func newUint8Message(data uint8) *Uint8Message {
+	return &Uint8Message{Data: data}
+}
+
+func (m *Uint8Message) Len() uint16 {
+	return 1
+}
+
+func (m *Uint8Message) MarshalBinary() (data []byte, err error) {
+	data = make([]byte, m.Len())
+	data[0] = m.Data
+	return
+}
+
+func (m *Uint8Message) UnmarshalBinary(data []byte) error {
+	if len(data) < 1 {
+		return errors.New("the []byte is too short to unmarshal a full Uint8Message")
+	}
+	m.Data = data[0]
+	return nil
+}
+
 type Uint16Message struct {
 	Data uint16
 }
