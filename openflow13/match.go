@@ -378,9 +378,8 @@ func DecodeMatchField(class uint16, field uint8, length uint8, hasMask bool, dat
 		case NXM_NX_IP_FRAG:
 		case NXM_NX_IPV6_LABEL:
 			val = new(IPv6FlowLabelField)
-		case NXM_NX_IP_ECN:
-		case NXM_NX_IP_TTL:
-		case NXM_NX_MPLS_TTL:
+		case NXM_NX_IP_ECN, NXM_NX_IP_TTL, NXM_NX_MPLS_TTL:
+			val = new(Uint8Message)
 		case NXM_NX_TUN_IPV4_SRC:
 			val = new(TunnelIpv4SrcField)
 		case NXM_NX_TUN_IPV4_DST:
@@ -460,6 +459,10 @@ func DecodeMatchField(class uint16, field uint8, length uint8, hasMask bool, dat
 		default:
 			log.Printf("Unhandled Field: %d in Class: %d", field, class)
 			return nil, fmt.Errorf("Bad pkt class: %v field: %v data: %v", class, field, data)
+		}
+
+		if val == nil {
+			return nil, fmt.Errorf("nil match value class: %v field: %v length: %v", class, field, length)
 		}
 
 		err := val.UnmarshalBinary(data)
@@ -1167,6 +1170,48 @@ func NewIpDscpField(dscp uint8) *MatchField {
 	ipDscpField.dscp = dscp
 	f.Value = ipDscpField
 	f.Length = uint8(ipDscpField.Len())
+
+	return f
+}
+
+// Return a MatchField for nicira nw_ecn (TOS ECN bits).
+func NewIpEcnField(ecn uint8) *MatchField {
+	f := new(MatchField)
+	f.Class = OXM_CLASS_NXM_1
+	f.Field = NXM_NX_IP_ECN
+	f.HasMask = false
+
+	val := newUint8Message(ecn)
+	f.Value = val
+	f.Length = uint8(val.Len())
+
+	return f
+}
+
+// Return a MatchField for nicira nw_ttl.
+func NewIpTtlField(ttl uint8) *MatchField {
+	f := new(MatchField)
+	f.Class = OXM_CLASS_NXM_1
+	f.Field = NXM_NX_IP_TTL
+	f.HasMask = false
+
+	val := newUint8Message(ttl)
+	f.Value = val
+	f.Length = uint8(val.Len())
+
+	return f
+}
+
+// Return a MatchField for nicira mpls_ttl.
+func NewMplsTtlField(ttl uint8) *MatchField {
+	f := new(MatchField)
+	f.Class = OXM_CLASS_NXM_1
+	f.Field = NXM_NX_MPLS_TTL
+	f.HasMask = false
+
+	val := newUint8Message(ttl)
+	f.Value = val
+	f.Length = uint8(val.Len())
 
 	return f
 }
