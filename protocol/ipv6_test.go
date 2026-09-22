@@ -58,7 +58,7 @@ func TestHopByHopHeader(t *testing.T) {
 			t.Fatalf("Failed to UnMarshal message: %v", err)
 		}
 		if err := testHopByHopHeaderEqual(oriMessage, newMessage); err != nil {
-			t.Errorf(err.Error())
+			t.Errorf("%v", err)
 		}
 	}
 	msg := &HopByHopHeader{
@@ -106,7 +106,7 @@ func TestRoutingHeader(t *testing.T) {
 			t.Fatalf("Failed to UnMarshal message: %v", err)
 		}
 		if err := testRoutingHeaderEqual(oriMessage, newMessage); err != nil {
-			t.Errorf(err.Error())
+			t.Errorf("%v", err)
 		}
 	}
 	data := make([]byte, 20)
@@ -157,7 +157,7 @@ func TestFragmentHeader(t *testing.T) {
 			t.Fatalf("Failed to UnMarshal message: %v", err)
 		}
 		if err := testFragmentHeaderEqual(oriMessage, newMessage); err != nil {
-			t.Errorf(err.Error())
+			t.Errorf("%v", err)
 		}
 	}
 

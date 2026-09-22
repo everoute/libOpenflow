@@ -4,11 +4,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"maps"
 	"math/big"
 	"net"
-
-	"golang.org/x/exp/constraints"
-	"golang.org/x/exp/maps"
+	"slices"
 )
 
 type Uint8Message struct {
@@ -244,7 +243,7 @@ func NewRegMatchField(idx int, data uint32, dataRng *NXRange) *MatchField {
 
 // NewMatchField mask没有值,不做mask;mask为1,start=mask[0],off=len(data);mask为2,start=mask[0],off=mask[1];mask 3指定位移
 // [注意]data的匹配和原始的行为不一样,原始不会对data做任何处理,这里会给data做位移到mask的start,这里还对最终值做的后填充,保证和命令行为一致
-func NewMatchField[Int constraints.Integer | *big.Int | ~[]byte, Mask constraints.Integer](
+func NewMatchField[Int Integer | *big.Int | ~[]byte, Mask Integer](
 	regName string, data Int, mask ...Mask) (*MatchField, error) {
 	if len(mask) > 3 {
 		return nil, fmt.Errorf("invalid mask length: %d", len(mask))
@@ -295,7 +294,7 @@ func NewMulitiRegMatch(fields ...*MatchField) []*MatchField {
 			regMap[reg.Field] = reg
 		}
 	}
-	return maps.Values(regMap)
+	return slices.Collect(maps.Values(regMap))
 }
 
 func shiftDataByMask(data, oldMask, newMask uint32) uint32 {

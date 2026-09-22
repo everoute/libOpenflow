@@ -24,7 +24,7 @@ func TestBundleControl(t *testing.T) {
 		t.Fatalf("Failed to Unmarshal BundleControl message: %v", err)
 	}
 	if err := bundleCtrlEqual(bundleCtrl, bundleCtrl2); err != nil {
-		t.Errorf(err.Error())
+		t.Errorf("%v", err)
 	}
 }
 
