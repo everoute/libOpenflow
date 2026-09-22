@@ -5,8 +5,6 @@ import (
 	"math/big"
 	"reflect"
 	"strings"
-
-	"golang.org/x/exp/constraints"
 )
 
 const (
@@ -325,7 +323,7 @@ func rangeMask(start, length uint) *big.Int {
 	return mask
 }
 
-func conv[Int constraints.Integer | *big.Int | ~[]byte](i Int) *big.Int {
+func conv[Int Integer | *big.Int | ~[]byte](i Int) *big.Int {
 	result := &big.Int{}
 	vi := reflect.ValueOf(i)
 	switch vi.Kind() {
@@ -339,4 +337,11 @@ func conv[Int constraints.Integer | *big.Int | ~[]byte](i Int) *big.Int {
 		result = vi.Interface().(*big.Int)
 	}
 	return result
+}
+
+// Integer is the standard-library replacement for the deprecated
+// golang.org/x/exp/constraints.Integer constraint.
+type Integer interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 |
+		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
 }
