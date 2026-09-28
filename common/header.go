@@ -114,12 +114,29 @@ type HelloElemVersionBitmap struct {
 	Bitmaps []uint32
 }
 
+// NewHelloElemVersionBitmap returns a Hello version bitmap element that
+// advertises OpenFlow 1.0 and 1.3, keeping the historic default.
 func NewHelloElemVersionBitmap() *HelloElemVersionBitmap {
+	return NewHelloElemVersionBitmapWithVersions(1, 4)
+}
+
+// NewHelloElemVersionBitmapWithVersions returns a Hello version bitmap element
+// that advertises the given OpenFlow protocol versions. Version 0 is reserved
+// and ignored.
+func NewHelloElemVersionBitmapWithVersions(versions ...uint8) *HelloElemVersionBitmap {
 	h := new(HelloElemVersionBitmap)
 	h.HelloElemHeader = *NewHelloElemHeader()
 	h.Bitmaps = make([]uint32, 0)
-	// 10010 meaning openflow 1.0 & 1.3 support
-	h.Bitmaps = append(h.Bitmaps, uint32(1<<4)|uint32(1<<1))
+	for _, v := range versions {
+		if v == 0 {
+			continue
+		}
+		word := int(v) / 32
+		for len(h.Bitmaps) <= word {
+			h.Bitmaps = append(h.Bitmaps, 0)
+		}
+		h.Bitmaps[word] |= uint32(1) << (v % 32)
+	}
 	h.Length = h.Length + uint16(len(h.Bitmaps)*4)
 	return h
 }
@@ -183,11 +200,36 @@ type Hello struct {
 	Elements []HelloElem
 }
 
+// NewHello returns a Hello message for the given protocol version, using the
+// default version bitmap (OpenFlow 1.0 and 1.3). Callers that advertise a
+// different set of versions should use NewHelloWithVersions.
 func NewHello(ver int) (h *Hello, err error) {
 	h = new(Hello)
 	h.Header = NewHeaderGenerator(ver)()
 	h.Elements = make([]HelloElem, 0)
 	h.Elements = append(h.Elements, NewHelloElemVersionBitmap())
+
+	return
+}
+
+// NewHelloWithVersions returns a Hello message that advertises the given
+// OpenFlow protocol versions. The header version is set to the highest
+// advertised version, as required by the specification.
+func NewHelloWithVersions(versions ...uint8) (h *Hello, err error) {
+	var highest uint8
+	for _, v := range versions {
+		if v > highest {
+			highest = v
+		}
+	}
+	if highest == 0 {
+		return nil, errors.New("at least one valid OpenFlow version is required")
+	}
+
+	h = new(Hello)
+	h.Header = NewHeaderGenerator(int(highest))()
+	h.Elements = make([]HelloElem, 0)
+	h.Elements = append(h.Elements, NewHelloElemVersionBitmapWithVersions(versions...))
 
 	return
 }
