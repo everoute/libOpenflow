@@ -73,6 +73,9 @@ func (s *MultipartRequest) UnmarshalBinary(data []byte) error {
 		req = s.Body.(*QueueStatsRequest)
 	case MultipartType_Experimenter:
 		break
+	case MultipartType_GroupDesc:
+		s.Body = &emptyMultipartBody{}
+		return nil
 	}
 	if req == nil {
 		return fmt.Errorf("unsupported MultipartRequest type: %d", s.Type)
@@ -144,6 +147,8 @@ func (s *MultipartReply) UnmarshalBinary(data []byte) error {
 			repl = new(TableStats)
 		case MultipartType_Queue:
 			repl = new(QueueStats)
+		case MultipartType_GroupDesc:
+			repl = new(GroupDescStats)
 		// FIXME: Support all types
 		case MultipartType_Experimenter:
 			break
