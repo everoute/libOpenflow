@@ -41,10 +41,10 @@ const (
 )
 
 const (
-	GT_ALL      = 0 /* All (multicast/broadcast) group. */
-	GT_SELECT   = 1 /* Select group. */
-	GT_INDIRECT = 2 /* Indirect group. */
-	GT_FF       = 3 /* Fast failover group. */
+	OFPGT_ALL      = 0 /* All (multicast/broadcast) group. */
+	OFPGT_SELECT   = 1 /* Select group. */
+	OFPGT_INDIRECT = 2 /* Indirect group. */
+	OFPGT_FF       = 3 /* Fast failover group. */
 )
 
 // GroupMod message
@@ -69,7 +69,7 @@ func NewGroupMod() *GroupMod {
 	g.Header.Type = Type_GroupMod
 
 	g.Command = OFPGC_ADD
-	g.Type = GT_ALL
+	g.Type = OFPGT_ALL
 	g.GroupId = 0
 	g.Buckets = make([]Bucket, 0)
 	return g
