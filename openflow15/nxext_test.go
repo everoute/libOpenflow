@@ -239,6 +239,31 @@ func TestNXActionCTNAT(t *testing.T) {
 	}
 }
 
+func TestNXActionCTClear(t *testing.T) {
+	act := NewNXActionCTClear()
+	data, err := act.MarshalBinary()
+	if err != nil {
+		t.Errorf("Failed to Marshal NXActionCTClear: %v", err)
+	}
+	if len(data) != int(act.Len()) {
+		t.Errorf("Failed to Marshal NXActionCTClear, expect len: %d, actual: %d", act.Len(), len(data))
+	}
+	act2 := new(NXActionCTClear)
+	if err := act2.UnmarshalBinary(data); err != nil {
+		t.Errorf("Failed to Unmarshal NXActionCTClear: %v", err)
+	}
+	if act2.Subtype != NXAST_CT_CLEAR {
+		t.Errorf("Failed to Unmarshal NXActionCTClear, expect subtype: %d, actual: %d", NXAST_CT_CLEAR, act2.Subtype)
+	}
+	decoded, err := DecodeNxAction(data)
+	if err != nil {
+		t.Errorf("Failed to DecodeNxAction NXActionCTClear: %v", err)
+	}
+	if _, ok := decoded.(*NXActionCTClear); !ok {
+		t.Errorf("Failed to DecodeNxAction NXActionCTClear, actual type: %T", decoded)
+	}
+}
+
 func TestNXActions(t *testing.T) {
 	translateMessages(t, NewNXActionConjunction(uint8(1), uint8(3), uint32(0xffee)), new(NXActionConjunction), nxConjunctionEquals)
 

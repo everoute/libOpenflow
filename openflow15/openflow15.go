@@ -89,6 +89,10 @@ const (
 	Type_BarrierRequest = 20
 	Type_BarrierReply   = 21
 
+	/* Queue configuration messages. */
+	Type_QueueGetConfigRequest = 22
+	Type_QueueGetConfigReply   = 23
+
 	/* Controller role change request messages. */
 	Type_RoleRequest = 24
 	Type_RoleReply   = 25

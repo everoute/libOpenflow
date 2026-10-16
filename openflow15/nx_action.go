@@ -176,6 +176,7 @@ func DecodeNxAction(data []byte) (Action, error) {
 	case NXAST_SAMPLE2:
 	case NXAST_OUTPUT_TRUNC:
 	case NXAST_CT_CLEAR:
+		a = new(NXActionCTClear)
 	case NXAST_CT_RESUBMIT:
 		a = new(NXActionResubmitTable)
 		a.(*NXActionResubmitTable).withCT = true
@@ -661,6 +662,49 @@ func NewNXActionResubmitTableCTNoInPort(tableID uint8) *NXActionResubmitTable {
 	a := newNXActionResubmitTableCT()
 	a.InPort = OFPP_IN_PORT
 	a.TableID = tableID
+	return a
+}
+
+// NXActionCTClear is NX action to clear connection tracking state.
+type NXActionCTClear struct {
+	*NXActionHeader
+	zeros [4]uint8 // 4 byte with zeros
+}
+
+func (a *NXActionCTClear) Len() (n uint16) {
+	return a.Length
+}
+
+func (a *NXActionCTClear) MarshalBinary() (data []byte, err error) {
+	data = make([]byte, int(a.Len()))
+	var b []byte
+	n := 0
+
+	b, err = a.NXActionHeader.MarshalBinary()
+	copy(data[n:], b)
+	n += len(b)
+	copy(data[n:], a.zeros[0:])
+	return
+}
+
+func (a *NXActionCTClear) UnmarshalBinary(data []byte) error {
+	n := 0
+	a.NXActionHeader = new(NXActionHeader)
+	err := a.NXActionHeader.UnmarshalBinary(data[n:])
+	n += int(a.NXActionHeader.Len())
+	if len(data) < int(a.Len()) {
+		return errors.New("the []byte is too short to unmarshal a full NXActionCTClear message")
+	}
+	a.zeros = [4]uint8{}
+	return err
+}
+
+func NewNXActionCTClear() *NXActionCTClear {
+	a := &NXActionCTClear{
+		NXActionHeader: NewNxActionHeader(NXAST_CT_CLEAR),
+		zeros:          [4]uint8{},
+	}
+	a.Length = 16
 	return a
 }
 

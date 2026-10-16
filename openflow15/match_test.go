@@ -25,6 +25,27 @@ func TestMatchEthAddresses(t *testing.T) {
 	}
 }
 
+func TestMatchIcmpFields(t *testing.T) {
+	ofMatch := NewMatch()
+	{
+		icmpTypeField := NewIcmpTypeField(8)
+		if icmpTypeField.Class != OXM_CLASS_OPENFLOW_BASIC || icmpTypeField.Field != OXM_FIELD_ICMPV4_TYPE {
+			t.Fatalf("unexpected icmp type field header: class=%d field=%d", icmpTypeField.Class, icmpTypeField.Field)
+		}
+		ofMatch.AddField(*icmpTypeField)
+
+		icmpCodeField := NewIcmpCodeField(0)
+		if icmpCodeField.Class != OXM_CLASS_OPENFLOW_BASIC || icmpCodeField.Field != OXM_FIELD_ICMPV4_CODE {
+			t.Fatalf("unexpected icmp code field header: class=%d field=%d", icmpCodeField.Class, icmpCodeField.Field)
+		}
+		ofMatch.AddField(*icmpCodeField)
+	}
+
+	if err := checkMatchSerializationConsistency(ofMatch); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func checkMatchSerializationConsistency(ofMatch *Match) error {
 	// Serialize the original match
 	ofMatchRaw, err := ofMatch.MarshalBinary()
